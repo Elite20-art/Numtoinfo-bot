@@ -236,21 +236,40 @@ def home():
     return render_template_string(HTML)
 
 def emoji_format(lookup_type, data):
+    # Emoji mapping
     emoji_map = {
-        "mobile": {"number":"📞","country":"🌍","carrier":"📡","region":"📍","connection":"🔌","active":"💚","lookup":"🔎"},
+        "mobile": {"mobile":"📞","name":"👤","father":"👨‍👦","address":"🏠","alt":"📞","circle":"📍","id":"🆔","email":"📧","success":"✅"},
         "vehicle":{"rc":"🚘","owner":"👤","registration":"📅","class":"🛻","fuel":"⛽","maker":"🏷️","engine":"⚙️","chassis":"🔩","fitness":"🧾","insurance":"🛡️","registered":"📍","status":"✅"},
         "aadhaar":{"aadhaar":"🆔","name":"👤","dob":"📅","state":"📍","status":"✅"},
         "upi":{"upi":"💳","holder":"👤","bank":"🏦","verified":"✅","created":"📅"},
         "email":{"email":"✉️","valid":"✅","disposable":"🚫","domain":"🌍","created":"📅"},
         "pan":{"pan":"🧾","name":"👤","dob":"📅","ao":"🏦","status":"✅"}
     }
+
     emap = emoji_map.get(lookup_type, {})
-    lines = []
-    for k,v in data.items():
-        key_lower = k.lower().replace("_"," ")
-        emoji = next((e for kw,e in emap.items() if kw in key_lower), "•")
-        lines.append(f"{emoji} {k.replace('_',' ').title()}: {v}")
-    return "\\n".join(lines)
+
+    def format_dict(d):
+        lines = []
+        for k, v in d.items():
+            key_lower = k.lower()
+            emoji = next((e for kw, e in emap.items() if kw in key_lower), "•")
+            value = str(v) if v not in [None, "", "null"] else "(not available)"
+            lines.append(f"{emoji} {k.replace('_',' ').title()}: {value}")
+        return "\n".join(lines)
+
+    # Clean format for list/dict
+    formatted = ""
+    if isinstance(data, list):
+        for i, item in enumerate(data, start=1):
+            formatted += f"Record {i}:\n{format_dict(item)}\n"
+            if i < len(data):
+                formatted += "────────────────────────────\n"
+    elif isinstance(data, dict):
+        formatted += format_dict(data)
+    else:
+        formatted += str(data)
+
+    return formatted.strip()
 
 @app.route('/lookup', methods=['POST'])
 def lookup():
@@ -276,4 +295,5 @@ def lookup():
         return jsonify({"error":str(e)})
 
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0",port=8080)
